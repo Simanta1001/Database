@@ -116,11 +116,11 @@ public class EmployeeSearchFrame extends JFrame {
         contentPane.add(lblEmployee);
 
         Properties prop = new Properties();
-            try (FileInputStream input = new FileInputStream("database.props")) {
-                prop.load(input);
-            } catch (Exception ex) {
+        try (FileInputStream input = new FileInputStream("database.props")) {
+            prop.load(input);
+        } catch (Exception ex) {
             ex.printStackTrace();
-            }
+        }
 
         String url = prop.getProperty("db.url");
         String user = prop.getProperty("db.user");
@@ -128,10 +128,10 @@ public class EmployeeSearchFrame extends JFrame {
 
         JButton btnSearch = new JButton("Search");
         btnSearch.addActionListener(new ActionListener() {
-        public void actionPerformed(ActionEvent e) {
-            try {
-                // Use the properties for database connection
-            Connection conn = DriverManager.getConnection(url, user, password);
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    // Use the properties for database connection
+                    Connection conn = DriverManager.getConnection(url, user, password);
                     Statement statementPrint = conn.createStatement();
                     List<String> selectedProjects = lstCustomProject.getSelectedValuesList();
                     List<String> selectedDepartment = lstCustomDepartment.getSelectedValuesList();
@@ -162,13 +162,16 @@ public class EmployeeSearchFrame extends JFrame {
                         queryString = "SELECT Fname, Minit, Lname FROM EMPLOYEE";
                     } else if (selectedDepartment.isEmpty()) {
                         queryString = "SELECT DISTINCT E.Fname, E.Minit, E.Lname FROM EMPLOYEE E LEFT JOIN WORKS_ON WO ON E.Ssn = WO.Essn LEFT JOIN PROJECT P ON WO.Pno = P.Pnumber WHERE "
-                                + " E.Ssn " + notProject + " IN (SELECT Essn FROM WORKS_ON LEFT JOIN PROJECT ON Pno = Pnumber WHERE Pname IN (" + projectName + "));";
+                                + " E.Ssn " + notProject
+                                + " IN (SELECT Essn FROM WORKS_ON LEFT JOIN PROJECT ON Pno = Pnumber WHERE Pname IN ("
+                                + projectName + "));";
                     } else if (selectedProjects.isEmpty()) {
                         queryString = "SELECT DISTINCT Fname, Minit, Lname FROM EMPLOYEE, DEPARTMENT WHERE DEPARTMENT.Dnumber = EMPLOYEE.Dno AND DEPARTMENT.Dname "
                                 + notDepartment + " IN (" + departmentName + ");";
                     } else {
                         queryString = "SELECT DISTINCT E.Fname, E.Minit, E.Lname FROM EMPLOYEE E INNER JOIN DEPARTMENT D ON D.Dnumber = E.Dno INNER JOIN WORKS_ON W ON E.Ssn = W.Essn WHERE D.Dname "
-                                + notDepartment + " IN (" + departmentName + ") AND " + " E.Ssn " + notProject + " IN (SELECT Essn FROM WORKS_ON LEFT JOIN PROJECT ON Pno = Pnumber WHERE Pname IN ("
+                                + notDepartment + " IN (" + departmentName + ") AND " + " E.Ssn " + notProject
+                                + " IN (SELECT Essn FROM WORKS_ON LEFT JOIN PROJECT ON Pno = Pnumber WHERE Pname IN ("
                                 + projectName + "));";
                     }
                     ResultSet employees = statementPrint.executeQuery(queryString);
@@ -211,9 +214,20 @@ public class EmployeeSearchFrame extends JFrame {
     }
 
     private void fillCustomDBLists() {
+        Properties prop = new Properties();
+        try (FileInputStream input = new FileInputStream("database.props")) {
+            prop.load(input);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        String url = prop.getProperty("db.url");
+        String user = prop.getProperty("db.user");
+        String password = prop.getProperty("db.password");
+
         try {
             customDatabaseName = txtCustomDatabase.getText();
-            Connection conn = DBConnector.getConnection(customDatabaseName);
+            Connection conn = DriverManager.getConnection(url, user, password);
             Statement statementDept = conn.createStatement();
             Statement statementProj = conn.createStatement();
             ResultSet rsDepartment = statementDept.executeQuery("SELECT Dname FROM DEPARTMENT");
