@@ -31,7 +31,7 @@ public class EmployeeSearchFrame extends JFrame {
     private JList<String> lstCustomProject;
     private DefaultListModel<String> customProjectModel = new DefaultListModel<>();
     private JTextArea textAreaCustomEmployee;
-    private String customDatabaseName = "";
+    //private String customDatabaseName = "";
     private JCheckBox chckbxNotCustomDept;
     private JCheckBox chckbxNotCustomProject;
 
@@ -226,7 +226,7 @@ public class EmployeeSearchFrame extends JFrame {
         String password = prop.getProperty("db.password");
 
         try {
-            customDatabaseName = txtCustomDatabase.getText();
+            //customDatabaseName = txtCustomDatabase.getText();
             Connection conn = DriverManager.getConnection(url, user, password);
             Statement statementDept = conn.createStatement();
             Statement statementProj = conn.createStatement();
