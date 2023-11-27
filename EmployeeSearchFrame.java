@@ -13,6 +13,7 @@ import javax.swing.JCheckBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -20,6 +21,7 @@ import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 import java.io.FileInputStream;
 import java.util.Properties;
+
 
 public class EmployeeSearchFrame extends JFrame {
 
@@ -31,9 +33,10 @@ public class EmployeeSearchFrame extends JFrame {
     private JList<String> lstCustomProject;
     private DefaultListModel<String> customProjectModel = new DefaultListModel<>();
     private JTextArea textAreaCustomEmployee;
-    private String customDatabaseName = "";
+    //private String customDatabaseName = "";
     private JCheckBox chckbxNotCustomDept;
     private JCheckBox chckbxNotCustomProject;
+    private String allowedDatabaseName = "COMPANY"; // Specify the allowed database name
 
     public static void main(String[] args) {
         EventQueue.invokeLater(() -> {
@@ -128,7 +131,18 @@ public class EmployeeSearchFrame extends JFrame {
 
         JButton btnSearch = new JButton("Search");
         btnSearch.addActionListener(new ActionListener() {
+            
+
+            
             public void actionPerformed(ActionEvent e) {
+                /*String enteredDatabaseName = txtCustomDatabase.getText().trim();
+                
+             if (!allowedDatabaseName.equalsIgnoreCase(enteredDatabaseName)) {
+
+            // Show an alert if the entered database name is not allowed
+            JOptionPane.showMessageDialog(EmployeeSearchFrame.this, "Error: Database access is restricted to 'COMPANY'.", "Database Error", JOptionPane.ERROR_MESSAGE);
+            return; // Stop execution if the entered database name is not allowed*/
+   // }
                 try {
                     // Use the properties for database connection
                     Connection conn = DriverManager.getConnection(url, user, password);
@@ -220,13 +234,22 @@ public class EmployeeSearchFrame extends JFrame {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+        
+
+        String enteredDatabaseName = txtCustomDatabase.getText().trim();
+        //System.out.println(enteredDatabaseName);
+        if (!allowedDatabaseName.equalsIgnoreCase(enteredDatabaseName)) {
+        // Show an alert if the entered database name is not allowed
+        JOptionPane.showMessageDialog(EmployeeSearchFrame.this, "Error: Database access is restricted to 'COMPANY'.", "Database Error", JOptionPane.ERROR_MESSAGE);
+        return; // Stop execution if the entered database name is not allowed
+    }
 
         String url = prop.getProperty("db.url");
         String user = prop.getProperty("db.user");
         String password = prop.getProperty("db.password");
 
         try {
-            customDatabaseName = txtCustomDatabase.getText();
+            //customDatabaseName = txtCustomDatabase.getText();
             Connection conn = DriverManager.getConnection(url, user, password);
             Statement statementDept = conn.createStatement();
             Statement statementProj = conn.createStatement();
