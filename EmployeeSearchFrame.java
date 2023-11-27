@@ -1,10 +1,10 @@
 import java.awt.EventQueue;
 import java.awt.Font;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import javax.swing.DefaultListModel;
@@ -13,7 +13,6 @@ import javax.swing.JCheckBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -21,7 +20,7 @@ import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 import java.io.FileInputStream;
 import java.util.Properties;
-
+import javax.swing.JOptionPane;
 
 public class EmployeeSearchFrame extends JFrame {
 
@@ -33,10 +32,10 @@ public class EmployeeSearchFrame extends JFrame {
     private JList<String> lstCustomProject;
     private DefaultListModel<String> customProjectModel = new DefaultListModel<>();
     private JTextArea textAreaCustomEmployee;
-    //private String customDatabaseName = "";
-    private JCheckBox chckbxNotCustomDept;
-    private JCheckBox chckbxNotCustomProject;
-    private String allowedDatabaseName = "COMPANY"; // Specify the allowed database name
+    private String customDatabaseName = "";
+    private JCheckBox notCheckBoxCustomDept;
+    private JCheckBox notCheckBoxCustomProject;
+    private Properties prop;
 
     public static void main(String[] args) {
         EventQueue.invokeLater(() -> {
@@ -75,7 +74,7 @@ public class EmployeeSearchFrame extends JFrame {
         btnCustomDBFill.setBounds(307, 19, 68, 23);
         contentPane.add(btnCustomDBFill);
 
-        lstCustomProject = new JList<String>(customProjectModel);
+        lstCustomProject = new JList<>(customProjectModel);
         lstCustomProject.setFont(new Font("Tahoma", Font.PLAIN, 12));
         lstCustomProject.setBounds(225, 84, 150, 42);
         contentPane.add(lstCustomProject);
@@ -95,15 +94,15 @@ public class EmployeeSearchFrame extends JFrame {
         contentPane.add(scrollPaneProject);
         scrollPaneProject.setViewportView(lstCustomProject);
 
-        chckbxNotCustomDept = new JCheckBox("Not");
-        chckbxNotCustomDept.setBounds(71, 133, 59, 23);
-        contentPane.add(chckbxNotCustomDept);
+        notCheckBoxCustomDept = new JCheckBox("Not");
+        notCheckBoxCustomDept.setBounds(71, 133, 59, 23);
+        contentPane.add(notCheckBoxCustomDept);
 
-        chckbxNotCustomProject = new JCheckBox("Not");
-        chckbxNotCustomProject.setBounds(270, 133, 59, 23);
-        contentPane.add(chckbxNotCustomProject);
+        notCheckBoxCustomProject = new JCheckBox("Not");
+        notCheckBoxCustomProject.setBounds(270, 133, 59, 23);
+        contentPane.add(notCheckBoxCustomProject);
 
-        lstCustomDepartment = new JList<String>(customDepartmentModel);
+        lstCustomDepartment = new JList<>(customDepartmentModel);
         lstCustomDepartment.setBounds(36, 84, 172, 40);
         contentPane.add(lstCustomDepartment);
         lstCustomDepartment.setFont(new Font("Tahoma", Font.PLAIN, 12));
@@ -118,106 +117,6 @@ public class EmployeeSearchFrame extends JFrame {
         lblEmployee.setBounds(52, 179, 89, 14);
         contentPane.add(lblEmployee);
 
-        Properties prop = new Properties();
-        try (FileInputStream input = new FileInputStream("database.props")) {
-            prop.load(input);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-
-        String url = prop.getProperty("db.url");
-        String user = prop.getProperty("db.user");
-        String password = prop.getProperty("db.password");
-
-        JButton btnSearch = new JButton("Search");
-        btnSearch.addActionListener(new ActionListener() {
-            
-
-            
-            public void actionPerformed(ActionEvent e) {
-                /*String enteredDatabaseName = txtCustomDatabase.getText().trim();
-                
-             if (!allowedDatabaseName.equalsIgnoreCase(enteredDatabaseName)) {
-
-            // Show an alert if the entered database name is not allowed
-            JOptionPane.showMessageDialog(EmployeeSearchFrame.this, "Error: Database access is restricted to 'COMPANY'.", "Database Error", JOptionPane.ERROR_MESSAGE);
-            return; // Stop execution if the entered database name is not allowed*/
-   // }
-                try {
-                    // Use the properties for database connection
-                    Connection conn = DriverManager.getConnection(url, user, password);
-                    Statement statementPrint = conn.createStatement();
-                    List<String> selectedProjects = lstCustomProject.getSelectedValuesList();
-                    List<String> selectedDepartment = lstCustomDepartment.getSelectedValuesList();
-                    String projectName = "";
-                    String departmentName = "";
-                    String notDepartment = "";
-                    String notProject = "";
-                    if (!selectedProjects.isEmpty()) {
-                        for (String project : selectedProjects) {
-                            projectName = projectName + "'" + project + "'" + ",";
-                        }
-                        projectName = projectName.substring(0, projectName.length() - 1);
-                    }
-                    if (!selectedDepartment.isEmpty()) {
-                        for (String department : selectedDepartment) {
-                            departmentName = departmentName + "'" + department + "',";
-                        }
-                        departmentName = departmentName.substring(0, departmentName.length() - 1);
-                    }
-                    if (chckbxNotCustomDept.isSelected()) {
-                        notDepartment = "NOT";
-                    }
-                    if (chckbxNotCustomProject.isSelected()) {
-                        notProject = "NOT";
-                    }
-                    String queryString = "";
-                    if (selectedProjects.isEmpty() && selectedDepartment.isEmpty()) {
-                        queryString = "SELECT Fname, Minit, Lname FROM EMPLOYEE";
-                    } else if (selectedDepartment.isEmpty()) {
-                        queryString = "SELECT DISTINCT E.Fname, E.Minit, E.Lname FROM EMPLOYEE E LEFT JOIN WORKS_ON WO ON E.Ssn = WO.Essn LEFT JOIN PROJECT P ON WO.Pno = P.Pnumber WHERE "
-                                + " E.Ssn " + notProject
-                                + " IN (SELECT Essn FROM WORKS_ON LEFT JOIN PROJECT ON Pno = Pnumber WHERE Pname IN ("
-                                + projectName + "));";
-                    } else if (selectedProjects.isEmpty()) {
-                        queryString = "SELECT DISTINCT Fname, Minit, Lname FROM EMPLOYEE, DEPARTMENT WHERE DEPARTMENT.Dnumber = EMPLOYEE.Dno AND DEPARTMENT.Dname "
-                                + notDepartment + " IN (" + departmentName + ");";
-                    } else {
-                        queryString = "SELECT DISTINCT E.Fname, E.Minit, E.Lname FROM EMPLOYEE E INNER JOIN DEPARTMENT D ON D.Dnumber = E.Dno INNER JOIN WORKS_ON W ON E.Ssn = W.Essn WHERE D.Dname "
-                                + notDepartment + " IN (" + departmentName + ") AND " + " E.Ssn " + notProject
-                                + " IN (SELECT Essn FROM WORKS_ON LEFT JOIN PROJECT ON Pno = Pnumber WHERE Pname IN ("
-                                + projectName + "));";
-                    }
-                    ResultSet employees = statementPrint.executeQuery(queryString);
-                    while (employees.next()) {
-                        String employeeName = employees.getString("Fname") + " " + employees.getString("Minit") + " "
-                                + employees.getString("Lname");
-                        textAreaCustomEmployee.append(employeeName + "\n");
-                    }
-                    employees.close();
-                    statementPrint.close();
-                    conn.close();
-                } catch (Exception exep) {
-                    exep.printStackTrace();
-                }
-            }
-        });
-        btnSearch.setBounds(80, 276, 89, 23);
-        contentPane.add(btnSearch);
-
-        JButton btnClear = new JButton("Clear");
-        btnClear.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                textAreaCustomEmployee.setText("");
-                lstCustomDepartment.clearSelection();
-                lstCustomProject.clearSelection();
-                chckbxNotCustomDept.setSelected(false);
-                chckbxNotCustomProject.setSelected(false);
-            }
-        });
-        btnClear.setBounds(236, 276, 89, 23);
-        contentPane.add(btnClear);
-
         textAreaCustomEmployee = new JTextArea();
         textAreaCustomEmployee.setBounds(36, 197, 339, 68);
 
@@ -225,32 +124,50 @@ public class EmployeeSearchFrame extends JFrame {
         scrollPaneEmployee.setBounds(36, 197, 339, 68);
         scrollPaneEmployee.setViewportView(textAreaCustomEmployee);
         contentPane.add(scrollPaneEmployee);
-    }
 
-    private void fillCustomDBLists() {
-        Properties prop = new Properties();
+        prop = new Properties();
         try (FileInputStream input = new FileInputStream("database.props")) {
             prop.load(input);
+            String dbdriver = prop.getProperty("db.driver");
+            Class.forName(dbdriver);
+            
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-        
 
-        String enteredDatabaseName = txtCustomDatabase.getText().trim();
-        //System.out.println(enteredDatabaseName);
-        if (!allowedDatabaseName.equalsIgnoreCase(enteredDatabaseName)) {
-        // Show an alert if the entered database name is not allowed
-        JOptionPane.showMessageDialog(EmployeeSearchFrame.this, "Error: Database access is restricted to 'COMPANY'.", "Database Error", JOptionPane.ERROR_MESSAGE);
-        return; // Stop execution if the entered database name is not allowed
+        JButton btnSearch = new JButton("Search");
+        btnSearch.addActionListener(e -> searchCustomDatabase());
+        btnSearch.setBounds(80, 276, 89, 23);
+        contentPane.add(btnSearch);
+
+        JButton btnClear = new JButton("Clear");
+        btnClear.addActionListener(e -> clearFields());
+        btnClear.setBounds(236, 276, 89, 23);
+        contentPane.add(btnClear);
     }
 
-        String url = prop.getProperty("db.url");
+    private void fillCustomDBLists() {
+        clearFields();
+        customDatabaseName = txtCustomDatabase.getText().trim();
+        String dbURL = prop.getProperty("db.url");
+        String url = String.format(dbURL, customDatabaseName);
         String user = prop.getProperty("db.user");
         String password = prop.getProperty("db.password");
-
-        try {
-            //customDatabaseName = txtCustomDatabase.getText();
-            Connection conn = DriverManager.getConnection(url, user, password);
+    
+        try (Connection conn = DriverManager.getConnection(url, user, password)) {
+            // Attempt to connect to the database
+    
+            if (!databaseExists(conn, customDatabaseName)) {
+                // Show an error message using a popup dialog
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Error: Database name not found!",
+                        "Database Error",
+                        JOptionPane.ERROR_MESSAGE
+                );
+                return;
+            }
+    
             Statement statementDept = conn.createStatement();
             Statement statementProj = conn.createStatement();
             ResultSet rsDepartment = statementDept.executeQuery("SELECT Dname FROM DEPARTMENT");
@@ -265,13 +182,104 @@ public class EmployeeSearchFrame extends JFrame {
                 String projectName = rsProject.getString("Pname");
                 customProjectModel.addElement(projectName);
             }
-            rsProject.close();
-            rsDepartment.close();
-            statementDept.close();
-            statementProj.close();
-            conn.close();
-        } catch (Exception exep) {
-            exep.printStackTrace();
+        } catch (Exception ex) {
+            // Handle any other exceptions
+            System.out.println("");
+    
+            // Show an error message using a popup dialog
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Unable to find the name of the database.","Error! " ,
+                    JOptionPane.ERROR_MESSAGE
+            );
         }
+    }
+    
+    
+    private boolean databaseExists(Connection conn, String dbName) {
+        try {
+            String query = "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?";
+            try (PreparedStatement preparedStatement = conn.prepareStatement(query)) {
+                preparedStatement.setString(1, dbName);
+                ResultSet resultSet = preparedStatement.executeQuery();
+                return resultSet.next();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private void searchCustomDatabase() {
+        textAreaCustomEmployee.setText("");
+        customDatabaseName = txtCustomDatabase.getText().trim();
+        String dbURL = prop.getProperty("db.url");
+        String url = String.format(dbURL, customDatabaseName);
+        String user = prop.getProperty("db.user");
+        String password = prop.getProperty("db.password");
+        String dbdriver = prop.getProperty("db.driver");
+//connector
+        try {
+            Class.forName(dbdriver);
+            try (Connection conn = DriverManager.getConnection(url, user, password)) {
+                List<String> selectedProjects = lstCustomProject.getSelectedValuesList();
+                List<String> selectedDepartment = lstCustomDepartment.getSelectedValuesList();
+                String notinDept = notCheckBoxCustomDept.isSelected() ? "NOT" : "";
+                String notProject = notCheckBoxCustomProject.isSelected() ? "NOT" : "";
+
+                String query = buildQuery(selectedProjects, selectedDepartment, notinDept, notProject);
+
+                try (PreparedStatement preparedStatement = conn.prepareStatement(query)) {
+                    setQueryParameters(preparedStatement, selectedProjects, selectedDepartment);
+                    
+                    ResultSet employees = preparedStatement.executeQuery();
+
+                    while (employees.next()) {
+                        String employeeName = employees.getString("Fname") + " " + employees.getString("Minit") + " "
+                                + employees.getString("Lname");
+                        textAreaCustomEmployee.append(employeeName + "\n");
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private String buildQuery(List<String> selectedProjects, List<String> selectedDepartment, String notinDept, String notProject) {
+        if (selectedProjects.isEmpty() && selectedDepartment.isEmpty()) {
+            return "SELECT Fname, Minit, Lname FROM EMPLOYEE";
+        } else if (selectedProjects.isEmpty()) {
+            return "SELECT DISTINCT Fname, Minit, Lname FROM EMPLOYEE, DEPARTMENT WHERE DEPARTMENT.Dnumber = EMPLOYEE.Dno AND DEPARTMENT.Dname "
+                    + notinDept + " IN (?)";
+        } else if (selectedDepartment.isEmpty()) {
+            return "SELECT DISTINCT E.Fname, E.Minit, E.Lname FROM EMPLOYEE E LEFT JOIN WORKS_ON WO ON E.Ssn = WO.Essn LEFT JOIN PROJECT P ON WO.Pno = P.Pnumber WHERE "
+                    + " E.Ssn " + notProject
+                    + " IN (SELECT Essn FROM WORKS_ON LEFT JOIN PROJECT ON Pno = Pnumber WHERE Pname IN (?))";
+        } else {
+            return "SELECT DISTINCT E.Fname, E.Minit, E.Lname FROM EMPLOYEE E INNER JOIN DEPARTMENT D ON D.Dnumber = E.Dno INNER JOIN WORKS_ON W ON E.Ssn = W.Essn WHERE D.Dname "
+                    + notinDept + " IN (?) AND " + " E.Ssn " + notProject
+                    + " IN (SELECT Essn FROM WORKS_ON LEFT JOIN PROJECT ON Pno = Pnumber WHERE Pname IN (?))";
+        }
+    }
+
+    private void setQueryParameters(PreparedStatement preparedStatement, List<String> selectedProjects, List<String> selectedDepartment) throws SQLException {
+        int parameterIndex = 1;
+
+        for (String department : selectedDepartment) {
+            preparedStatement.setString(parameterIndex++, department);
+        }
+
+        for (String project : selectedProjects) {
+            preparedStatement.setString(parameterIndex++, project);
+        }
+    }
+
+    private void clearFields() {
+        textAreaCustomEmployee.setText("");
+        lstCustomDepartment.clearSelection();
+        lstCustomProject.clearSelection();
+        notCheckBoxCustomDept.setSelected(false);
+        notCheckBoxCustomProject.setSelected(false);
     }
 }
